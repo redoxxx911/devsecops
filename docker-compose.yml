@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: devsecops-api
+    restart: unless-stopped
+    network_mode: "host"
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"

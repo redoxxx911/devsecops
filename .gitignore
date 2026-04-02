@@ -1,0 +1,11 @@
+# Ignore infrastructure data volumes
+gitlab/
+sonarqube/
+
+# Ignore environment variables and secrets
+.env
+
+# Ignore Python caches and virtual environments
+.venv/
+__pycache__/
+*.pyc
