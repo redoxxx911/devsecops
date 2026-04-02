@@ -64,7 +64,7 @@ build_image:
 trivy_scan:
   stage: container_scan
   image:
-    name: docker.io/aquasec/trivy:latest
+    name: ghcr.io/aquasecurity/trivy:0.69.3
     entrypoint: [""]
   script:
     # Scan the tarball generated in the build stage for HIGH and CRITICAL vulnerabilities
