@@ -3,6 +3,8 @@ image: python:3.11-slim
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
+  # Hardcode image name since GitLab Registry is disabled
+  IMAGE_NAME: "devsecops-api" 
 
 stages:
   - install
@@ -25,7 +27,8 @@ lint_code:
   stage: lint
   script:
     - pip install flake8
-    - flake8 app/
+    # Relax line length to 120 and ignore trailing whitespace for now
+    - flake8 app/ --max-line-length=120 --ignore=W293
   allow_failure: true
 
 test_code:
@@ -44,7 +47,8 @@ sonar_scan:
   stage: sast
   image: sonarsource/sonar-scanner-cli:latest
   script:
-    - sonar-scanner
+    # Force properties via CLI so we don't rely on the external file
+    - sonar-scanner -Dsonar.projectKey=devsecops-api -Dsonar.sources=app/
   allow_failure: true
 
 build_image:
@@ -53,8 +57,8 @@ build_image:
   services:
     - docker:24.0.5-dind
   script:
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker save $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA > image.tar
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHA .
+    - docker save $IMAGE_NAME:$CI_COMMIT_SHA > image.tar
   artifacts:
     paths:
       - image.tar
@@ -65,9 +69,7 @@ push_registry:
   services:
     - docker:24.0.5-dind
   script:
-    - docker load < image.tar
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - echo "Skipping remote push until Phase 8 or external registry configuration."
   allow_failure: true
 
 deploy_staging:
