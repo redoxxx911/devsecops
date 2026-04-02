@@ -3,8 +3,7 @@ image: python:3.11-slim
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
-  # Hardcode image name since GitLab Registry is disabled
-  IMAGE_NAME: "devsecops-api" 
+  IMAGE_NAME: "devsecops-api"
 
 stages:
   - install
@@ -12,6 +11,7 @@ stages:
   - test
   - sast
   - build
+  - container_scan
   - push
   - deploy
 
@@ -27,7 +27,6 @@ lint_code:
   stage: lint
   script:
     - pip install flake8
-    # Relax line length to 120 and ignore trailing whitespace for now
     - flake8 app/ --max-line-length=120 --ignore=W293
   allow_failure: true
 
@@ -47,7 +46,6 @@ sonar_scan:
   stage: sast
   image: sonarsource/sonar-scanner-cli:latest
   script:
-    # Force properties via CLI so we don't rely on the external file
     - sonar-scanner -Dsonar.projectKey=devsecops-api -Dsonar.sources=app/
   allow_failure: true
 
@@ -63,13 +61,23 @@ build_image:
     paths:
       - image.tar
 
+trivy_scan:
+  stage: container_scan
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    # Scan the tarball generated in the build stage for HIGH and CRITICAL vulnerabilities
+    - trivy image --no-progress --severity HIGH,CRITICAL --input image.tar
+  allow_failure: true
+
 push_registry:
   stage: push
   image: docker:24.0.5
   services:
     - docker:24.0.5-dind
   script:
-    - echo "Skipping remote push until Phase 8 or external registry configuration."
+    - echo "Skipping remote push until Phase 8."
   allow_failure: true
 
 deploy_staging:
