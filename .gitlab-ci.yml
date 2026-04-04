@@ -13,6 +13,7 @@ stages:
   - build
   - container_scan
   - push
+  - dast
   - deploy
 
 install_dependencies:
@@ -78,6 +79,21 @@ push_registry:
     - docker:24.0.5-dind
   script:
     - echo "Skipping remote push until Phase 8."
+  allow_failure: true
+dast_scan:
+  stage: dast
+  image: 
+    name: ghcr.io/zaproxy/zaproxy:stable
+    entrypoint: [""]
+  script:
+    - mkdir -p /zap/wrk
+    # Run a baseline scan against the frontend. 
+    # -t is the target, -I ignores warnings, -r generates a report.
+    - zap-baseline.py -t http://100.95.70.37:5173 -g gen.conf -I -r dast_report.html
+  artifacts:
+    paths:
+      - dast_report.html
+    when: always
   allow_failure: true
 
 deploy_staging:
