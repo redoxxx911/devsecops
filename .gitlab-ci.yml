@@ -87,15 +87,15 @@ dast_scan:
     entrypoint: [""]
   script:
     - mkdir -p /zap/wrk
-    # Run a baseline scan against the frontend. 
-    # -t is the target, -I ignores warnings, -r generates a report.
+    # Run the scan and output to /zap/wrk/dast_report.html
     - zap-baseline.py -t http://100.95.70.37:5173 -g gen.conf -I -r dast_report.html
+    # COPY the report to the GitLab working directory so artifacts can find it
+    - cp /zap/wrk/dast_report.html ./dast_report.html
   artifacts:
     paths:
       - dast_report.html
     when: always
   allow_failure: true
-
 deploy_staging:
   stage: deploy
   image: alpine:latest
