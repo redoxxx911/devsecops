@@ -107,13 +107,16 @@ async def check_pipelines(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         latest_failed = pipelines[0]
         jobs = latest_failed.jobs.list()
-        failed_job = next((j for j in jobs if j.status == 'failed'), None)
+        failed_job_summary = next((j for j in jobs if j.status == 'failed'), None)
         
-        if failed_job:
-            trace = failed_job.trace().decode('utf-8')[-2000:]
+        if failed_job_summary:
+            # THE FIX: Fetch the full job object by ID to unlock the .trace() method
+            full_job = project.jobs.get(failed_job_summary.id)
+            trace = full_job.trace().decode('utf-8')[-2000:]
+            
             prompt = f"This GitLab CI/CD job failed. Analyze the trace and tell me the exact commands to fix it:\n\n{trace}"
             analysis = await ask_llm(prompt)
-            await update.message.reply_text(f"❌ **Pipeline Failed (Job {failed_job.id}):**\n\n{analysis}", parse_mode='Markdown')
+            await update.message.reply_text(f"❌ **Pipeline Failed (Job {full_job.id}):**\n\n{analysis}", parse_mode='Markdown')
     except Exception as e:
         await update.message.reply_text(f"❌ GitLab Query Failed: {str(e)}")
 
