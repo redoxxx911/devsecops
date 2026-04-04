@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./app
+    container_name: vault-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: vault-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  default:
+    name: devsecops-network
