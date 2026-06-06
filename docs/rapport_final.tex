@@ -1,0 +1,792 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+
+\definecolor{primary}{HTML}{1D4ED8}
+\definecolor{dark}{HTML}{0F172A}
+\definecolor{lightgray}{HTML}{F1F5F9}
+\definecolor{codegray}{HTML}{334155}
+\definecolor{danger}{HTML}{B91C1C}
+\definecolor{success}{HTML}{047857}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    citecolor=primary,
+    pdftitle={Final DevSecOps Report},
+    pdfauthor={DevSecOps Semester Project}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Final DevSecOps Report}
+\rhead{Zero-Trust Vault}
+\cfoot{\thepage}
+
+\titleformat{\chapter}
+  {\normalfont\huge\bfseries\color{dark}}
+  {\thechapter}{20pt}{}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primary}}
+  {\thesection}{12pt}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{dark}}
+  {\thesubsection}{10pt}{}
+
+\lstdefinestyle{projectcode}{
+    backgroundcolor=\color{lightgray},
+    basicstyle=\ttfamily\small\color{codegray},
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray},
+    showstringspaces=false,
+    tabsize=2,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=b
+}
+\lstset{style=projectcode}
+
+\newcommand{\screenshotplaceholder}[2]{
+    \begin{figure}[H]
+        \centering
+        \IfFileExists{../screenshots/#1}{
+            \includegraphics[width=0.92\textwidth]{../screenshots/#1}
+        }{
+            \fbox{
+                \parbox[c][5cm][c]{0.88\textwidth}{
+                    \centering
+                    \textbf{Screenshot placeholder}\\[0.3cm]
+                    \texttt{#1}\\[0.2cm]
+                    #2
+                }
+            }
+        }
+        \caption{#2}
+    \end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    {\Huge\bfseries Final DevSecOps Report\par}
+    \vspace{0.5cm}
+    {\Large Zero-Trust Vault Semester Project\par}
+    \vspace{1.2cm}
+    {\large CI/CD Pipelines, GitLab Configuration, Security Scans, Docker, Kubernetes, and Automation\par}
+    \vfill
+    \begin{tabular}{rl}
+        Project repository: & \texttt{devsecops-project} \\
+        Main pipeline file: & \texttt{.gitlab-ci.yml} \\
+        Deployment model: & Docker Compose and Kubernetes \\
+        Report language: & English \\
+    \end{tabular}
+    \vfill
+    {\large Academic Year 2025--2026\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+\pagenumbering{arabic}
+
+\chapter*{Executive Summary}
+\addcontentsline{toc}{chapter}{Executive Summary}
+
+This report presents a complete DevSecOps semester project built around a Zero-Trust Vault application. The objective is to demonstrate how security can be integrated continuously into the software delivery lifecycle instead of being executed only at the end of development.
+
+The project contains five pipeline folders, one global GitLab CI/CD configuration, automation scripts, Docker files, Kubernetes manifests, screenshot evidence placeholders, and this final report. The application itself is composed of a FastAPI backend, a React frontend, an ELK monitoring stack, and a SecOps automation bot that can interact with GitLab, Elasticsearch, Telegram, and an LLM provider.
+
+The implemented DevSecOps workflow covers source code quality, automated tests, static analysis, container image building, vulnerability scanning, dynamic application security testing, deployment, runtime log collection, and incident support automation. The report also documents important security findings identified in the source code, including hardcoded secrets, permissive CORS, demo credentials, and hardcoded frontend configuration.
+
+\chapter{Project Presentation}
+
+\section{Project Context}
+
+Modern software delivery requires fast releases, repeatable deployments, and continuous security validation. Traditional development models often detect security issues late, when the cost of remediation is higher. DevSecOps addresses this problem by embedding security controls directly into CI/CD pipelines, infrastructure automation, and operational monitoring.
+
+This project applies those principles to a small but realistic web application. The application is intentionally simple enough to understand quickly, but it contains the core elements required to demonstrate a DevSecOps chain:
+
+\begin{itemize}[leftmargin=*]
+    \item A backend API that exposes authentication and protected resources.
+    \item A frontend interface that consumes the backend API.
+    \item Containerized services using Docker.
+    \item GitLab CI/CD jobs for validation and security scanning.
+    \item Docker Compose deployment for local or staging use.
+    \item Kubernetes deployment manifests for cluster delivery.
+    \item Runtime observability using Filebeat, Elasticsearch, and Kibana.
+    \item A SecOps bot that assists with SIEM and pipeline analysis.
+\end{itemize}
+
+\section{Project Objectives}
+
+The main objectives of the project are:
+
+\begin{enumerate}[leftmargin=*]
+    \item Build a complete repository grouping all semester pipeline work.
+    \item Define several CI/CD pipelines that demonstrate different DevSecOps concerns.
+    \item Configure GitLab CI/CD stages for quality, security, build, scan, and deployment.
+    \item Document the DevSecOps tools used and explain their roles.
+    \item Provide automation scripts for repeatable operations.
+    \item Include Docker and Kubernetes deployment artifacts.
+    \item Analyze security scan results and identify remediation actions.
+    \item Produce one final global report in a professional format.
+\end{enumerate}
+
+\section{Repository Organization}
+
+The final repository is organized as follows:
+
+\begin{lstlisting}[language=bash,caption={Repository structure}]
+devsecops-project/
+├── Pipeline1/
+├── Pipeline2/
+├── Pipeline3/
+├── Pipeline4/
+├── Pipeline5/
+├── scripts/
+├── docker/
+├── kubernetes/
+├── screenshots/
+├── docs/
+│   ├── rapport_final.tex
+│   ├── rapport_final.html
+│   ├── rapport_final.md
+│   └── rapport_final.pdf
+├── app/
+├── frontend/
+├── secops-bot/
+├── .gitlab-ci.yml
+├── docker-compose.yml
+└── README.md
+\end{lstlisting}
+
+Each pipeline folder contains a specific pipeline configuration and a README file explaining its purpose. The global \texttt{.gitlab-ci.yml} file combines the most important jobs into one end-to-end CI/CD workflow.
+
+\chapter{Application Analysis}
+
+\section{Backend}
+
+The backend is implemented with FastAPI. It exposes two main endpoints:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{POST /token}: authenticates a user and returns a JWT.
+    \item \texttt{GET /secrets}: validates the JWT and returns protected demo data.
+\end{itemize}
+
+The backend demonstrates API authentication and protected resource access. From a security perspective, it is useful because it contains examples of common weaknesses that can be detected and discussed during SAST and manual review.
+
+\section{Frontend}
+
+The frontend is implemented with React and Vite. It provides:
+
+\begin{itemize}[leftmargin=*]
+    \item A login screen.
+    \item JWT storage in browser local storage.
+    \item A protected dashboard that fetches data from the backend.
+    \item A logout action that removes the token.
+\end{itemize}
+
+The frontend is served through Nginx in the production Docker image. It is used as the DAST target for OWASP ZAP baseline scanning.
+
+\section{SecOps Bot}
+
+The SecOps bot is a Python service using Telegram, Elasticsearch, GitLab, and an LLM API. It provides interactive and proactive operations:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{/siem}: queries Elasticsearch logs and summarizes suspicious events.
+    \item \texttt{/pipelines}: queries GitLab for failed pipelines and summarizes failure traces.
+    \item Background monitoring: searches for repeated unauthorized access events.
+\end{itemize}
+
+Sensitive values such as tokens and API keys are expected through environment variables. This is a better practice than hardcoding secrets, but the environment file must never be committed to a public repository.
+
+\section{Monitoring Stack}
+
+The monitoring stack uses:
+
+\begin{itemize}[leftmargin=*]
+    \item Filebeat to collect Docker container logs.
+    \item Elasticsearch to index logs.
+    \item Kibana to visualize and investigate events.
+\end{itemize}
+
+This monitoring layer supports the operational side of DevSecOps. It helps connect runtime events with automated incident analysis.
+
+\chapter{DevSecOps Architecture}
+
+\section{Architecture Overview}
+
+The project architecture connects application services, CI/CD automation, security scanners, deployment platforms, and monitoring tools.
+
+\begin{table}[H]
+\centering
+\caption{Architecture components}
+\begin{tabular}{p{3.2cm}p{4cm}p{7cm}}
+\toprule
+\textbf{Layer} & \textbf{Component} & \textbf{Role} \\
+\midrule
+Application & FastAPI backend & Provides authentication and protected API endpoints. \\
+Application & React frontend & Provides user interface and communicates with the backend. \\
+Automation & SecOps bot & Queries SIEM data and GitLab pipeline failures. \\
+CI/CD & GitLab CI/CD & Orchestrates build, test, scan, push, DAST, and deployment stages. \\
+SAST & SonarScanner & Detects code quality and security issues. \\
+Container security & Trivy & Scans Docker images for high and critical vulnerabilities. \\
+DAST & OWASP ZAP & Tests the running web application externally. \\
+Monitoring & Filebeat, Elasticsearch, Kibana & Collects, stores, and visualizes runtime logs. \\
+Deployment & Docker Compose & Runs the complete stack locally or in staging. \\
+Deployment & Kubernetes & Provides a cluster deployment model. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Logical Flow}
+
+The DevSecOps flow follows these steps:
+
+\begin{enumerate}[leftmargin=*]
+    \item Developers commit code to the repository.
+    \item GitLab CI/CD starts the pipeline.
+    \item Dependencies are installed in clean runner environments.
+    \item Code quality and tests are executed.
+    \item Static analysis checks the source code.
+    \item Docker images are built for application components.
+    \item Trivy scans the generated images.
+    \item Images can be pushed to a registry on the main branch.
+    \item OWASP ZAP scans the deployed frontend.
+    \item Docker Compose or Kubernetes deploys the stack.
+    \item Filebeat forwards runtime logs to Elasticsearch.
+    \item Kibana and the SecOps bot support monitoring and incident analysis.
+\end{enumerate}
+
+\section{Security Philosophy}
+
+The project follows a shift-left and shield-right approach:
+
+\begin{itemize}[leftmargin=*]
+    \item Shift-left: detect security issues early during code, test, and build stages.
+    \item Shield-right: observe the running application and respond to runtime events.
+\end{itemize}
+
+This is important because not all vulnerabilities can be found statically. Some problems appear only in the running application, while others come from infrastructure, dependencies, or user behavior.
+
+\chapter{CI/CD Pipeline Design}
+
+\section{Global Pipeline}
+
+The global GitLab CI/CD file contains the following stages:
+
+\begin{lstlisting}[language=yaml,caption={Global pipeline stages}]
+stages:
+  - install
+  - lint
+  - test
+  - sast
+  - build
+  - container_scan
+  - push
+  - dast
+  - deploy
+\end{lstlisting}
+
+This order is intentional. Cheaper and faster checks run first, while image scanning, DAST, and deployment run later. This reduces wasted build time when source code quality or test checks already fail.
+
+\section{Pipeline 1: CI Quality and Unit Tests}
+
+\subsection{Purpose}
+
+Pipeline 1 validates the codebase before security scanning and deployment. Its goal is to ensure that the application can install dependencies, pass linting, and execute tests.
+
+\subsection{Stages}
+
+\begin{table}[H]
+\centering
+\caption{Pipeline 1 stages}
+\begin{tabular}{p{3cm}p{10cm}}
+\toprule
+\textbf{Stage} & \textbf{Description} \\
+\midrule
+Install & Installs backend dependencies from \texttt{app/requirements.txt}. \\
+Lint backend & Runs \texttt{flake8} on the FastAPI backend. \\
+Lint frontend & Runs \texttt{npm run lint} on the React frontend. \\
+Test & Runs \texttt{pytest} and exports coverage in Cobertura XML format. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Expected Evidence}
+
+The expected evidence is a GitLab pipeline graph showing successful or allowed-failure jobs, a coverage artifact, and lint logs. During a classroom demonstration, lint and test jobs may be configured with \texttt{allow\_failure: true} to keep the complete pipeline visible even when the code still needs improvements.
+
+\section{Pipeline 2: SAST and Code Quality}
+
+\subsection{Purpose}
+
+Pipeline 2 performs static application security testing. It scans source code for vulnerabilities, risky coding patterns, bugs, and maintainability issues.
+
+\subsection{Tools}
+
+The main tool is SonarScanner. A simple secret review job is also documented to search for suspicious terms such as \texttt{SECRET\_KEY}, \texttt{TOKEN}, \texttt{API\_KEY}, and \texttt{password}.
+
+\subsection{Important Findings}
+
+The source analysis identified several important findings:
+
+\begin{itemize}[leftmargin=*]
+    \item The backend contains a hardcoded JWT signing key.
+    \item The backend enables permissive CORS using all origins.
+    \item The backend contains demo credentials.
+    \item The frontend contains a hardcoded API base URL.
+    \item The SecOps bot depends on external tokens and must use environment variables safely.
+\end{itemize}
+
+\section{Pipeline 3: Docker Build and Container Scan}
+
+\subsection{Purpose}
+
+Pipeline 3 packages application components into Docker images and scans those images before they are pushed or deployed.
+
+\subsection{Images Built}
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{zero-trust-vault/backend}: FastAPI backend.
+    \item \texttt{zero-trust-vault/frontend}: React application served by Nginx.
+    \item \texttt{zero-trust-vault/secops-bot}: Python SecOps automation bot.
+\end{itemize}
+
+\subsection{Container Scan}
+
+Trivy scans the image artifacts for high and critical vulnerabilities. The scan checks operating system packages and application dependencies. This is necessary because a source code scan alone does not validate base images or installed packages.
+
+\section{Pipeline 4: DAST and Runtime Monitoring}
+
+\subsection{Purpose}
+
+Pipeline 4 validates the running application externally and connects runtime logs to the monitoring stack.
+
+\subsection{DAST}
+
+OWASP ZAP baseline scanning targets the frontend URL. It performs passive security checks and produces an HTML report. Typical findings may include missing security headers, weak cookie policies, exposed routes, or other web hardening issues.
+
+\subsection{Runtime Monitoring}
+
+Filebeat collects Docker logs and sends them to Elasticsearch. Kibana allows analysts to search for events such as failed authentication attempts and application errors. The SecOps bot can query these logs and summarize suspicious activity.
+
+\section{Pipeline 5: Deployment and Automation}
+
+\subsection{Purpose}
+
+Pipeline 5 focuses on delivery and operations. It shows how the stack can run with Docker Compose and how it can be deployed to Kubernetes.
+
+\subsection{Deployment Options}
+
+\begin{itemize}[leftmargin=*]
+    \item Docker Compose for local and staging demonstration.
+    \item Kubernetes manifests for cluster deployment.
+    \item Manual deployment gates for cluster delivery.
+\end{itemize}
+
+\subsection{Automation}
+
+The SecOps bot extends the pipeline work by connecting CI/CD failures and SIEM events to chat-based operational workflows.
+
+\chapter{GitLab CI/CD Configuration}
+
+\section{Important Variables}
+
+The global pipeline defines image names and scanner target variables:
+
+\begin{lstlisting}[language=yaml,caption={Pipeline variables}]
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  BACKEND_IMAGE: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
+  FRONTEND_IMAGE: "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
+  BOT_IMAGE: "$CI_REGISTRY_IMAGE/secops-bot:$CI_COMMIT_SHA"
+  ZAP_TARGET_URL: "http://frontend"
+\end{lstlisting}
+
+Using commit SHA tags improves traceability. Each image can be linked back to the exact commit that produced it.
+
+\section{Artifacts}
+
+The pipeline stores important outputs as artifacts:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{coverage.xml}: backend coverage report.
+    \item \texttt{backend-image.tar}: backend Docker image artifact.
+    \item \texttt{frontend-image.tar}: frontend Docker image artifact.
+    \item \texttt{secops-bot-image.tar}: bot Docker image artifact.
+    \item \texttt{trivy-backend.txt}: backend image scan result.
+    \item \texttt{trivy-frontend.txt}: frontend image scan result.
+    \item \texttt{trivy-secops-bot.txt}: bot image scan result.
+    \item \texttt{dast\_report.html}: OWASP ZAP report.
+\end{itemize}
+
+\section{Allowed Failures}
+
+Some jobs are configured with \texttt{allow\_failure: true}. In a teaching project, this makes sense because it lets the complete pipeline execute even when one quality or security check reports findings. In a production environment, this setting should be removed for critical gates such as high severity vulnerabilities, test failures, and DAST alerts.
+
+\chapter{DevSecOps Tools Used}
+
+\begin{longtable}{p{3.5cm}p{3.5cm}p{7cm}}
+\caption{Tools used in the project} \\
+\toprule
+\textbf{Tool} & \textbf{Category} & \textbf{Usage} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Tool} & \textbf{Category} & \textbf{Usage} \\
+\midrule
+\endhead
+GitLab CI/CD & Pipeline orchestration & Executes all CI/CD stages and stores artifacts. \\
+Docker & Containerization & Packages the backend, frontend, and SecOps bot. \\
+Docker Compose & Local deployment & Runs the full stack on one machine. \\
+Kubernetes & Cluster deployment & Provides deployment and service manifests. \\
+Flake8 & Linting & Checks Python code style and formatting. \\
+Pytest & Testing & Runs backend tests and generates coverage. \\
+SonarScanner & SAST & Performs static application security and quality analysis. \\
+Trivy & Container scanning & Detects vulnerabilities in Docker images. \\
+OWASP ZAP & DAST & Scans the running web application. \\
+Filebeat & Log shipping & Collects Docker container logs. \\
+Elasticsearch & Log indexing & Stores runtime logs and makes them searchable. \\
+Kibana & Visualization & Provides dashboards and log exploration. \\
+Telegram Bot & Alerting interface & Allows interactive SecOps commands. \\
+OpenRouter / LLM API & Analysis assistance & Summarizes failed jobs and security events. \\
+\bottomrule
+\end{longtable}
+
+\chapter{Security Scan Analysis}
+
+\section{SAST Analysis}
+
+\subsection{Hardcoded JWT Secret}
+
+The backend contains a JWT secret directly in source code:
+
+\begin{lstlisting}[language=Python,caption={Example of hardcoded secret pattern}]
+SECRET_KEY = "SuperSecureDevSecOpsVaultKey"
+\end{lstlisting}
+
+\textbf{Risk:} If the repository becomes public or is leaked, an attacker can use the secret to forge valid tokens.
+
+\textbf{Recommendation:} Move the secret to an environment variable, GitLab CI/CD protected variable, Docker secret, Kubernetes secret, or a dedicated secret manager.
+
+\subsection{Permissive CORS}
+
+The backend allows all origins:
+
+\begin{lstlisting}[language=Python,caption={Permissive CORS pattern}]
+allow_origins=["*"]
+\end{lstlisting}
+
+\textbf{Risk:} Any website can call the API from a browser if authentication conditions are met. This increases exposure.
+
+\textbf{Recommendation:} Restrict CORS to the known frontend domain in staging and production.
+
+\subsection{Demo Credentials}
+
+The authentication endpoint contains fixed demonstration credentials.
+
+\textbf{Risk:} Hardcoded credentials are dangerous if deployed outside a lab environment.
+
+\textbf{Recommendation:} Replace the demo logic with a real identity provider or a database-backed user store with hashed passwords.
+
+\subsection{Hardcoded Frontend API URL}
+
+The frontend contains a fixed backend URL.
+
+\textbf{Risk:} The build becomes tied to one environment and may expose internal infrastructure details.
+
+\textbf{Recommendation:} Use environment-specific variables such as \texttt{VITE\_API\_BASE\_URL}.
+
+\section{Container Scan Analysis}
+
+Trivy is configured to scan backend, frontend, and SecOps bot images for high and critical vulnerabilities.
+
+\subsection{Expected Remediation Process}
+
+\begin{enumerate}[leftmargin=*]
+    \item Review the Trivy report artifact.
+    \item Identify whether vulnerabilities come from base images or application dependencies.
+    \item Update base images such as \texttt{python:3.11-slim}, \texttt{node:20-alpine}, and \texttt{nginx:stable-alpine}.
+    \item Update Python and Node.js dependencies.
+    \item Rebuild images and rescan.
+    \item Document accepted risks when no fix is available.
+\end{enumerate}
+
+\section{DAST Analysis}
+
+OWASP ZAP baseline scanning checks the web application from the outside. This is complementary to SAST and container scanning because it tests the real HTTP behavior of the deployed application.
+
+\subsection{Typical Findings}
+
+Possible ZAP findings include:
+
+\begin{itemize}[leftmargin=*]
+    \item Missing \texttt{Content-Security-Policy} header.
+    \item Missing \texttt{X-Frame-Options} or equivalent frame protection.
+    \item Missing \texttt{X-Content-Type-Options} header.
+    \item Missing secure cookie attributes.
+    \item Information disclosure through headers.
+\end{itemize}
+
+\subsection{Recommended Hardening}
+
+\begin{itemize}[leftmargin=*]
+    \item Add strict security headers at the Nginx or backend layer.
+    \item Use HTTPS in production.
+    \item Restrict exposed routes.
+    \item Avoid storing sensitive JWTs in local storage for high-risk applications.
+\end{itemize}
+
+\section{Runtime Monitoring Analysis}
+
+The monitoring stack collects and analyzes logs after deployment. The SecOps bot watches for repeated unauthorized access patterns and errors.
+
+\subsection{Observed Event Types}
+
+\begin{itemize}[leftmargin=*]
+    \item HTTP \texttt{401 Unauthorized} responses.
+    \item Backend application errors.
+    \item Container startup and restart events.
+    \item Pipeline failures from GitLab.
+\end{itemize}
+
+\subsection{Operational Value}
+
+This layer helps detect problems that scanners cannot fully predict. For example, repeated failed authentication attempts can indicate brute force activity or misuse of credentials.
+
+\chapter{Docker Deployment}
+
+\section{Docker Compose Services}
+
+The Docker Compose file defines these services:
+
+\begin{longtable}{p{3.5cm}p{5cm}p{6cm}}
+\caption{Docker Compose services} \\
+\toprule
+\textbf{Service} & \textbf{Image / Build} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Service} & \textbf{Image / Build} & \textbf{Purpose} \\
+\midrule
+\endhead
+backend & \texttt{docker/backend.Dockerfile} & Runs the FastAPI API on port 8000. \\
+frontend & \texttt{docker/frontend.Dockerfile} & Serves the React app through Nginx on port 5173. \\
+elasticsearch & Elastic official image & Stores and indexes logs. \\
+kibana & Elastic official image & Visualizes logs and dashboards. \\
+filebeat & Elastic official image & Reads Docker logs and forwards them to Elasticsearch. \\
+secops-bot & \texttt{docker/secops-bot.Dockerfile} & Runs the Telegram/GitLab/SIEM automation bot. \\
+\bottomrule
+\end{longtable}
+
+\section{Execution}
+
+\begin{lstlisting}[language=bash,caption={Run the stack with Docker Compose}]
+docker compose up -d
+\end{lstlisting}
+
+\section{Security Notes}
+
+The Docker Compose deployment is suitable for local demonstration. For production, the project should enable TLS, authenticated Elasticsearch, secret storage, network restrictions, and stronger health checks.
+
+\chapter{Kubernetes Deployment}
+
+\section{Manifests}
+
+The Kubernetes folder contains:
+
+\begin{itemize}[leftmargin=*]
+    \item \texttt{namespace.yaml}
+    \item \texttt{backend-deployment.yaml}
+    \item \texttt{frontend-deployment.yaml}
+    \item \texttt{elk-stack.yaml}
+    \item \texttt{secops-bot-deployment.yaml}
+    \item \texttt{kustomization.yaml}
+\end{itemize}
+
+\section{Deployment Command}
+
+\begin{lstlisting}[language=bash,caption={Deploy with Kustomize}]
+kubectl apply -k kubernetes/
+\end{lstlisting}
+
+\section{Kubernetes Security Improvements}
+
+The provided manifests are sufficient for demonstration, but a production cluster should also include:
+
+\begin{itemize}[leftmargin=*]
+    \item Resource requests and limits.
+    \item Network policies.
+    \item Read-only root filesystems where possible.
+    \item Non-root containers.
+    \item External secret management.
+    \item Ingress with TLS.
+    \item Pod security standards.
+\end{itemize}
+
+\chapter{Automation Scripts}
+
+\section{Script Inventory}
+
+\begin{table}[H]
+\centering
+\caption{Automation scripts}
+\begin{tabular}{p{4cm}p{9cm}}
+\toprule
+\textbf{Script} & \textbf{Purpose} \\
+\midrule
+\texttt{build-images.sh} & Builds backend, frontend, and SecOps bot Docker images. \\
+\texttt{security-scan.sh} & Runs Trivy scans and writes reports. \\
+\texttt{run-dast.sh} & Runs OWASP ZAP baseline scan against a target URL. \\
+\texttt{deploy-k8s.sh} & Applies the Kubernetes manifests. \\
+\texttt{collect-evidence.sh} & Collects service status files and refreshes screenshot checklist. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Automation Benefits}
+
+The scripts make the project repeatable. A user can build images, run scans, deploy manifests, and collect evidence without manually retyping long commands.
+
+\chapter{Screenshot Evidence}
+
+The \texttt{screenshots/} directory contains the expected screenshot list. The LaTeX report is configured to display the real image when it exists and show a placeholder when it does not.
+
+\screenshotplaceholder{01-gitlab-pipeline-overview.png}{GitLab CI/CD pipeline overview}
+\screenshotplaceholder{02-sonarqube-dashboard.png}{SonarQube SAST dashboard}
+\screenshotplaceholder{03-trivy-scan-results.png}{Trivy container vulnerability scan results}
+\screenshotplaceholder{04-zap-dast-report.png}{OWASP ZAP DAST report}
+\screenshotplaceholder{05-kibana-dashboard.png}{Kibana dashboard with ingested logs}
+\screenshotplaceholder{06-docker-compose-services.png}{Docker Compose services running}
+\screenshotplaceholder{07-kubernetes-workloads.png}{Kubernetes workloads and services}
+\screenshotplaceholder{08-secops-bot-alert.png}{SecOps bot alert or command response}
+
+\chapter{Risk Register}
+
+\begin{longtable}{p{3cm}p{4cm}p{3cm}p{5cm}}
+\caption{Project risk register} \\
+\toprule
+\textbf{Risk} & \textbf{Description} & \textbf{Severity} & \textbf{Mitigation} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Risk} & \textbf{Description} & \textbf{Severity} & \textbf{Mitigation} \\
+\midrule
+\endhead
+Hardcoded JWT secret & Secret is stored directly in source code. & High & Move to protected environment variables or secret manager. \\
+Permissive CORS & API accepts requests from all origins. & Medium & Restrict allowed origins per environment. \\
+Demo credentials & Fixed login credentials exist in code. & High & Implement secure authentication and password hashing. \\
+Hardcoded API URL & Frontend target is fixed in source. & Medium & Use environment-based configuration. \\
+Unprotected Elasticsearch & Security disabled for demonstration. & High & Enable authentication and TLS in production. \\
+Allowed failure jobs & Security findings may not block deployment. & Medium & Enforce quality gates before production release. \\
+Missing screenshots & Evidence may be incomplete before submission. & Low & Add screenshots listed in the evidence folder. \\
+\bottomrule
+\end{longtable}
+
+\chapter{Recommendations}
+
+\section{Short-Term Improvements}
+
+\begin{itemize}[leftmargin=*]
+    \item Replace hardcoded secrets with environment variables.
+    \item Add a \texttt{.env.example} file and keep real secrets out of Git.
+    \item Restrict CORS to the frontend domain.
+    \item Configure frontend API URL through \texttt{VITE\_API\_BASE\_URL}.
+    \item Add basic backend tests for authentication success, authentication failure, and protected endpoint access.
+    \item Add Nginx security headers for the frontend container.
+\end{itemize}
+
+\section{Medium-Term Improvements}
+
+\begin{itemize}[leftmargin=*]
+    \item Enforce SonarQube quality gates.
+    \item Fail the pipeline on high and critical vulnerabilities when fixes are available.
+    \item Add dependency scanning for Python and Node.js packages.
+    \item Add GitLab protected environments and manual approval before production deployment.
+    \item Add Kubernetes network policies and resource limits.
+\end{itemize}
+
+\section{Long-Term Improvements}
+
+\begin{itemize}[leftmargin=*]
+    \item Integrate a real identity provider.
+    \item Use a secret manager such as HashiCorp Vault or cloud-native secrets.
+    \item Add centralized alerting for SIEM events.
+    \item Add infrastructure-as-code scanning.
+    \item Add software bill of materials generation.
+    \item Add signed container images and admission control.
+\end{itemize}
+
+\chapter{Conclusion}
+
+This project demonstrates a complete DevSecOps workflow across the software delivery lifecycle. It starts with CI quality checks, continues with SAST and container scanning, validates the running application with DAST, and supports deployment through Docker Compose and Kubernetes. The monitoring stack and SecOps bot extend the work beyond deployment by adding runtime visibility and automated analysis.
+
+The project also shows that DevSecOps is not only about adding tools. The most important value comes from connecting tools into a coherent workflow, documenting evidence, and using scan results to drive remediation. The current project is appropriate for a semester demonstration, and it provides a strong base for future production hardening.
+
+\appendix
+
+\chapter{Useful Commands}
+
+\begin{lstlisting}[language=bash,caption={Build Docker images}]
+./scripts/build-images.sh
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash,caption={Run container vulnerability scans}]
+./scripts/security-scan.sh
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash,caption={Run DAST scan}]
+./scripts/run-dast.sh http://localhost:5173
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash,caption={Deploy locally}]
+docker compose up -d
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash,caption={Deploy to Kubernetes}]
+./scripts/deploy-k8s.sh
+\end{lstlisting}
+
+\chapter{Compilation}
+
+To compile this LaTeX report on a machine with a LaTeX distribution installed:
+
+\begin{lstlisting}[language=bash,caption={Compile the LaTeX report}]
+cd devsecops-project/docs
+pdflatex rapport_final.tex
+pdflatex rapport_final.tex
+\end{lstlisting}
+
+Running the command twice updates the table of contents, list of figures, and list of tables.
+
+\end{document}

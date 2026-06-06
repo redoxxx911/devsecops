@@ -1,0 +1,6 @@
+resources:
+  - namespace.yaml
+  - backend-deployment.yaml
+  - frontend-deployment.yaml
+  - elk-stack.yaml
+  - secops-bot-deployment.yaml

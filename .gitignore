@@ -1,0 +1,11 @@
+.env
+*.env
+__pycache__/
+*.pyc
+node_modules/
+dist/
+reports/
+coverage.xml
+dast_report.html
+*-image.tar
+.cache/

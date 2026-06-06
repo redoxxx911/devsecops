@@ -1,0 +1,25 @@
+stages:
+  - deploy
+
+deploy_docker_compose:
+  stage: deploy
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker compose up -d
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  allow_failure: true
+
+deploy_kubernetes:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  script:
+    - kubectl apply -k kubernetes/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  when: manual
+  allow_failure: true

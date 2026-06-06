@@ -1,0 +1,18 @@
+stages:
+  - sast
+
+sonarqube_sast:
+  stage: sast
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  script:
+    - sonar-scanner -Dsonar.projectKey=zero-trust-vault -Dsonar.sources=app,frontend/src,secops-bot
+  allow_failure: true
+
+secret_review:
+  stage: sast
+  image: alpine:latest
+  script:
+    - grep -RInE "SECRET_KEY|password|TOKEN|API_KEY|PRIVATE_KEY" app frontend/src secops-bot || true
+  allow_failure: true

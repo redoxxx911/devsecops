@@ -1,0 +1,479 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{caption}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+
+\definecolor{primary}{HTML}{1D4ED8}
+\definecolor{dark}{HTML}{0F172A}
+\definecolor{lightgray}{HTML}{F1F5F9}
+\definecolor{codegray}{HTML}{334155}
+\definecolor{danger}{HTML}{B91C1C}
+\definecolor{success}{HTML}{047857}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    pdftitle={SecOps Bot Alarm Report},
+    pdfauthor={DevSecOps Semester Project}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SecOps Bot Alarm Report}
+\rhead{Zero-Trust Vault}
+\cfoot{\thepage}
+
+\lstdefinestyle{projectcode}{
+    backgroundcolor=\color{lightgray},
+    basicstyle=\ttfamily\small\color{codegray},
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray},
+    showstringspaces=false,
+    tabsize=2,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=b
+}
+\lstset{style=projectcode}
+
+\newcommand{\workflowpicture}{
+    \begin{figure}[H]
+        \centering
+        \IfFileExists{../screenshots/09-secops-bot-alarm-workflow.png}{
+            \includegraphics[width=0.92\textwidth]{../screenshots/09-secops-bot-alarm-workflow.png}
+        }{
+            \fbox{
+                \parbox[c][7cm][c]{0.88\textwidth}{
+                    \centering
+                    \textbf{Place bot workflow picture here}\\[0.4cm]
+                    File name expected:\\[0.2cm]
+                    \texttt{screenshots/09-secops-bot-alarm-workflow.png}\\[0.4cm]
+                    Suggested content: Telegram bot command, Elasticsearch/Kibana logs, and the generated alert message.
+                }
+            }
+        }
+        \caption{SecOps bot alarming workflow}
+    \end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    {\Huge\bfseries SecOps Bot Alarm Report\par}
+    \vspace{0.5cm}
+    {\Large Zero-Trust Vault DevSecOps Project\par}
+    \vspace{1cm}
+    {\large Detailed report about the alerting bot used for SIEM monitoring, pipeline failure analysis, and proactive alarms.\par}
+    \vfill
+    \begin{tabular}{rl}
+        Bot source file: & \texttt{secops-bot/bot.py} \\
+        Runtime: & Python container \\
+        Alert channel: & Telegram \\
+        Log source: & Elasticsearch / Filebeat \\
+        CI/CD source: & GitLab API \\
+        AI analysis: & OpenRouter-compatible LLM API \\
+    \end{tabular}
+    \vfill
+    {\large Academic Year 2025--2026\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+\pagenumbering{arabic}
+
+\chapter*{Executive Summary}
+\addcontentsline{toc}{chapter}{Executive Summary}
+
+This report focuses only on the SecOps bot used in the DevSecOps project. The bot is designed as an operational assistant for alarming and incident awareness. It connects to Telegram for communication, Elasticsearch for runtime security logs, GitLab for CI/CD pipeline status, and an LLM provider for automatic analysis of logs and failures.
+
+The main purpose of the bot is to reduce the time between detection and response. Instead of requiring a human operator to manually check Kibana dashboards and GitLab jobs, the bot provides simple commands and proactive background monitoring. When suspicious events appear, especially repeated unauthorized access responses, the bot sends an alert directly to Telegram with a short AI-generated incident summary.
+
+\chapter{Bot Purpose and Scope}
+
+\section{Purpose}
+
+The SecOps bot was created to support the operational part of the DevSecOps lifecycle. CI/CD pipelines detect many issues before deployment, but some problems only appear at runtime. The bot helps monitor those runtime events and turns raw logs into understandable alerts.
+
+\section{Scope}
+
+The bot covers three main operational needs:
+
+\begin{itemize}[leftmargin=*]
+    \item Manual SIEM analysis through the \texttt{/siem} Telegram command.
+    \item Manual GitLab pipeline failure analysis through the \texttt{/pipelines} Telegram command.
+    \item Proactive alarming through a scheduled background job that detects suspicious authentication failures.
+\end{itemize}
+
+\section{Why the Bot Is Useful}
+
+The bot is useful because it centralizes three different sources of information:
+
+\begin{enumerate}[leftmargin=*]
+    \item Runtime logs from Elasticsearch.
+    \item CI/CD job status and traces from GitLab.
+    \item Human-readable incident explanations generated through an LLM.
+\end{enumerate}
+
+This gives the security operator a faster way to understand what is happening without switching between many tools.
+
+\chapter{Bot Architecture}
+
+\section{Main Components}
+
+\begin{table}[H]
+\centering
+\caption{Bot architecture components}
+\begin{tabular}{p{4cm}p{9cm}}
+\toprule
+\textbf{Component} & \textbf{Role} \\
+\midrule
+Telegram Bot API & Provides the chat interface used by the operator. \\
+Elasticsearch Client & Queries runtime logs collected by Filebeat. \\
+GitLab Client & Reads failed pipelines and job traces from GitLab. \\
+OpenRouter / LLM Client & Summarizes logs and CI/CD failures in natural language. \\
+Background Job Queue & Runs periodic checks for suspicious events. \\
+Environment Variables & Stores tokens, URLs, and sensitive configuration. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{High-Level Data Flow}
+
+The bot receives commands or scheduled events, queries external systems, sends the collected evidence to the LLM for analysis, and returns the result through Telegram.
+
+\begin{enumerate}[leftmargin=*]
+    \item The operator starts the bot with \texttt{/start}.
+    \item The bot stores the Telegram chat ID for future alerts.
+    \item The operator can request a SIEM check using \texttt{/siem}.
+    \item The operator can request pipeline status using \texttt{/pipelines}.
+    \item A background task periodically checks recent Elasticsearch logs.
+    \item If suspicious events are detected, the bot sends a proactive alert to Telegram.
+\end{enumerate}
+
+\workflowpicture
+
+\chapter{Configuration}
+
+\section{Environment Variables}
+
+The bot is configured through environment variables. This avoids storing real tokens directly in the code.
+
+\begin{longtable}{p{4cm}p{9cm}}
+\caption{Bot environment variables} \\
+\toprule
+\textbf{Variable} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Variable} & \textbf{Purpose} \\
+\midrule
+\endhead
+\texttt{TELEGRAM\_TOKEN} & Telegram bot token used to start the bot. \\
+\texttt{TELEGRAM\_CHAT\_ID} & Default chat ID for background alerts. \\
+\texttt{OPENROUTER\_API\_KEY} & API key used to call the LLM provider. \\
+\texttt{GITLAB\_URL} & GitLab instance URL. \\
+\texttt{GITLAB\_TOKEN} & GitLab private token used to read projects and pipelines. \\
+\texttt{ELASTICSEARCH\_URL} & Elasticsearch endpoint used to query logs. \\
+\bottomrule
+\end{longtable}
+
+\section{Example Environment File}
+
+\begin{lstlisting}[language=bash,caption={Bot environment example}]
+TELEGRAM_TOKEN=replace-me
+TELEGRAM_CHAT_ID=replace-me
+OPENROUTER_API_KEY=replace-me
+GITLAB_URL=https://gitlab.com
+GITLAB_TOKEN=replace-me
+ELASTICSEARCH_URL=http://elasticsearch:9200
+\end{lstlisting}
+
+\section{Security Note}
+
+The real \texttt{.env} file must not be committed to Git. It contains secrets that can give access to Telegram, GitLab, and the LLM API. In production, these values should be stored in GitLab CI/CD protected variables, Docker secrets, Kubernetes secrets, or a dedicated secret manager.
+
+\chapter{Telegram Commands}
+
+\section{\texttt{/start}}
+
+The \texttt{/start} command initializes the bot conversation. It also binds the current Telegram chat ID so the bot knows where to send proactive alarms.
+
+\begin{lstlisting}[language=Python,caption={Start command behavior}]
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global ALERT_CHAT_ID
+    ALERT_CHAT_ID = update.effective_chat.id
+    welcome_msg = "SecOps AI Agent Online..."
+    await update.message.reply_text(welcome_msg, parse_mode='Markdown')
+\end{lstlisting}
+
+\section{\texttt{/siem}}
+
+The \texttt{/siem} command queries Elasticsearch for recent suspicious logs. The current query searches for log messages containing \texttt{401} or \texttt{error}. These terms are useful for detecting authentication failures and application problems.
+
+\begin{lstlisting}[language=Python,caption={SIEM query logic}]
+query = {
+    "query": {
+        "bool": {
+            "should": [
+                {"match": {"message": "401"}},
+                {"match": {"message": "error"}}
+            ],
+            "minimum_should_match": 1
+        }
+    },
+    "size": 5,
+    "sort": [{"@timestamp": {"order": "desc"}}]
+}
+\end{lstlisting}
+
+If no suspicious events are found, the bot replies that the SIEM is quiet. If events are found, the bot sends the log messages to the LLM and returns an analysis to Telegram.
+
+\section{\texttt{/pipelines}}
+
+The \texttt{/pipelines} command checks GitLab for failed pipelines. If a failed pipeline exists, the bot retrieves the failed job trace and sends the last part of the trace to the LLM.
+
+The expected response is a practical explanation of why the job failed and what commands or changes may fix it.
+
+\chapter{Proactive Alarming}
+
+\section{Background Monitoring}
+
+The most important alarm feature is the background monitoring job. It runs automatically after the bot starts.
+
+\begin{lstlisting}[language=Python,caption={Background monitor schedule}]
+job_queue = app.job_queue
+job_queue.run_repeating(monitor_background, interval=10, first=5)
+\end{lstlisting}
+
+This means the bot starts checking after five seconds and repeats the check every ten seconds.
+
+\section{Alarm Detection Logic}
+
+The background monitor searches for recent \texttt{401 Unauthorized} events in Elasticsearch.
+
+\begin{lstlisting}[language=Python,caption={Alarm detection query}]
+query = {
+    "query": {
+        "bool": {
+            "must": [{"match": {"message": "401"}}],
+            "filter": [{"range": {"@timestamp": {"gte": "now-2m"}}}]
+        }
+    },
+    "size": 5,
+    "sort": [{"@timestamp": {"order": "desc"}}]
+}
+\end{lstlisting}
+
+The time window is the last two minutes. The bot retrieves the latest five matching logs and checks the total number of hits.
+
+\section{Alarm Threshold}
+
+The current threshold is:
+
+\begin{lstlisting}[language=Python,caption={Alarm threshold}]
+if res['hits']['total']['value'] > 1:
+    # trigger alert
+\end{lstlisting}
+
+This means the bot sends an alarm when more than one unauthorized event is detected during the recent time window. The code comment mentions more than three attempts, but the implemented condition is currently more than one. This should be corrected if the intended threshold is three failed attempts.
+
+\section{Alert Message}
+
+When the threshold is reached, the bot asks the LLM to produce a three-bullet incident report. Then it sends the result to Telegram.
+
+\begin{lstlisting}[language=Python,caption={Proactive alert message}]
+prompt = (
+    "URGENT: I am detecting a spike in 401 Unauthorized errors "
+    "in my SIEM right now. Analyze these logs and give me a "
+    "3-bullet-point incident report:\n"
+)
+
+msg = "PROACTIVE THREAT ALERT\n\n" + analysis
+await context.bot.send_message(
+    chat_id=ALERT_CHAT_ID,
+    text=msg,
+    parse_mode='Markdown'
+)
+\end{lstlisting}
+
+\section{Alarm Use Case}
+
+A typical alarm scenario is:
+
+\begin{enumerate}[leftmargin=*]
+    \item An attacker or test user repeatedly sends wrong credentials to the backend login endpoint.
+    \item The backend returns multiple \texttt{401 Unauthorized} responses.
+    \item Docker writes the backend logs.
+    \item Filebeat collects the container logs.
+    \item Elasticsearch indexes those events.
+    \item The bot background job detects the recent \texttt{401} spike.
+    \item The bot sends the logs to the LLM for summarization.
+    \item Telegram receives a proactive threat alert.
+\end{enumerate}
+
+\chapter{LLM Analysis Layer}
+
+\section{Fallback Model Chain}
+
+The bot defines a list of LLM models. It tries each model in order until one succeeds. If one model fails, the bot logs the error and continues to the next model.
+
+\begin{lstlisting}[language=Python,caption={Model fallback list}]
+MODELS = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "openai/gpt-oss-120b:free",
+    "google/gemma-3-27b-it:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "openrouter/free",
+]
+\end{lstlisting}
+
+\section{Value of AI Summarization}
+
+Raw SIEM logs and CI/CD traces can be difficult to read quickly. The LLM layer transforms raw evidence into a short explanation. This is useful for:
+
+\begin{itemize}[leftmargin=*]
+    \item Understanding the threat level.
+    \item Identifying the probable cause.
+    \item Suggesting first response actions.
+    \item Summarizing failed CI/CD jobs for faster debugging.
+\end{itemize}
+
+\section{Limitations}
+
+The LLM should be treated as an assistant, not as the final authority. Its output must be verified against the original logs and pipeline traces. Sensitive data should also be filtered before being sent to any external model provider.
+
+\chapter{Operational Workflow}
+
+\section{Deployment}
+
+The bot runs as a Docker service inside the project stack. It depends on the backend and Elasticsearch services.
+
+\begin{lstlisting}[language=yaml,caption={Docker Compose bot service}]
+secops-bot:
+  build:
+    context: ./secops-bot
+    dockerfile: ../docker/secops-bot.Dockerfile
+  image: zero-trust-vault/secops-bot:semester
+  container_name: secops-bot
+  env_file:
+    - ./secops-bot/.env.example
+  depends_on:
+    - backend
+    - elasticsearch
+  restart: unless-stopped
+\end{lstlisting}
+
+\section{How to Demonstrate the Bot}
+
+To demonstrate the bot during a presentation:
+
+\begin{enumerate}[leftmargin=*]
+    \item Start the full stack with Docker Compose.
+    \item Open Telegram and send \texttt{/start} to the bot.
+    \item Generate failed login attempts against the backend.
+    \item Wait for the background monitor to detect recent \texttt{401} events.
+    \item Show the proactive Telegram alert.
+    \item Use \texttt{/siem} to manually query recent events.
+    \item Use \texttt{/pipelines} after a failed GitLab pipeline.
+    \item Add the final screenshot as \texttt{screenshots/09-secops-bot-alarm-workflow.png}.
+\end{enumerate}
+
+\section{Suggested Screenshot}
+
+The required picture should show the bot in action. A good screenshot can include:
+
+\begin{itemize}[leftmargin=*]
+    \item The Telegram chat with the \texttt{/start} command.
+    \item A \texttt{PROACTIVE THREAT ALERT} message.
+    \item The AI-generated incident summary.
+    \item Kibana or Elasticsearch logs showing matching \texttt{401} events.
+\end{itemize}
+
+\workflowpicture
+
+\chapter{Risks and Improvements}
+
+\section{Current Risks}
+
+\begin{longtable}{p{4cm}p{4cm}p{5cm}}
+\caption{Bot-specific risks} \\
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Mitigation} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Mitigation} \\
+\midrule
+\endhead
+Sensitive tokens in environment files & Token exposure can compromise Telegram, GitLab, or LLM access. & Use secret managers and never commit real \texttt{.env} files. \\
+External LLM processing & Logs may contain sensitive data. & Redact logs before sending them to the LLM. \\
+Low alert threshold & More than one \texttt{401} can cause noisy alerts. & Tune the threshold and add rate limiting. \\
+No alert deduplication & The same incident may produce repeated messages. & Store recent alert fingerprints and suppress duplicates. \\
+Single chat destination & Alerts may go to only one operator. & Support multiple authorized chat IDs or team channels. \\
+Broad GitLab project selection & The bot selects the first owned project. & Configure a specific project ID. \\
+\bottomrule
+\end{longtable}
+
+\section{Recommended Improvements}
+
+\begin{itemize}[leftmargin=*]
+    \item Make the unauthorized access threshold configurable.
+    \item Add a cooldown period to avoid repeated alerts for the same incident.
+    \item Configure a fixed GitLab project ID instead of selecting the first owned project.
+    \item Add role-based access so only authorized Telegram users can run commands.
+    \item Redact secrets, tokens, and personal data before sending logs to the LLM.
+    \item Store alert history in a small database or Elasticsearch index.
+    \item Add more detection rules, such as repeated 500 errors, container restarts, and suspicious paths.
+\end{itemize}
+
+\chapter{Conclusion}
+
+The SecOps bot is the alarming and operational assistant of the DevSecOps project. It connects runtime monitoring, CI/CD visibility, and AI-based summarization into one Telegram interface. The most important feature is proactive alerting: the bot checks Elasticsearch for recent unauthorized access events and sends a Telegram alert when suspicious activity is detected.
+
+This bot turns the project from a simple CI/CD demonstration into a more complete DevSecOps workflow. It shows how teams can detect runtime problems, summarize incidents, and react faster after deployment. With stronger secret handling, alert tuning, access control, and log redaction, the bot could evolve into a useful lightweight security operations assistant.
+
+\appendix
+
+\chapter{Compilation}
+
+Compile this report with:
+
+\begin{lstlisting}[language=bash,caption={Compile the bot report}]
+cd devsecops-project/docs
+pdflatex secops_bot_alarm_report.tex
+pdflatex secops_bot_alarm_report.tex
+\end{lstlisting}
+
+The screenshot placeholder will automatically use this file if it exists:
+
+\begin{lstlisting}[language=bash,caption={Expected bot workflow screenshot}]
+devsecops-project/screenshots/09-secops-bot-alarm-workflow.png
+\end{lstlisting}
+
+\end{document}

@@ -1,0 +1,56 @@
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  BACKEND_IMAGE: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
+  FRONTEND_IMAGE: "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
+  BOT_IMAGE: "$CI_REGISTRY_IMAGE/secops-bot:$CI_COMMIT_SHA"
+
+stages:
+  - build
+  - container_scan
+  - push
+
+build_images:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker build -f docker/backend.Dockerfile -t "$BACKEND_IMAGE" ./app
+    - docker build -f docker/frontend.Dockerfile -t "$FRONTEND_IMAGE" ./frontend
+    - docker build -f docker/secops-bot.Dockerfile -t "$BOT_IMAGE" ./secops-bot
+    - docker save "$BACKEND_IMAGE" > backend-image.tar
+    - docker save "$FRONTEND_IMAGE" > frontend-image.tar
+    - docker save "$BOT_IMAGE" > secops-bot-image.tar
+  artifacts:
+    paths:
+      - backend-image.tar
+      - frontend-image.tar
+      - secops-bot-image.tar
+
+trivy_scan:
+  stage: container_scan
+  image:
+    name: ghcr.io/aquasecurity/trivy:0.69.3
+    entrypoint: [""]
+  script:
+    - trivy image --no-progress --severity HIGH,CRITICAL --input backend-image.tar
+    - trivy image --no-progress --severity HIGH,CRITICAL --input frontend-image.tar
+    - trivy image --no-progress --severity HIGH,CRITICAL --input secops-bot-image.tar
+  allow_failure: true
+
+push_images:
+  stage: push
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker load -i backend-image.tar
+    - docker load -i frontend-image.tar
+    - docker load -i secops-bot-image.tar
+    - docker push "$BACKEND_IMAGE"
+    - docker push "$FRONTEND_IMAGE"
+    - docker push "$BOT_IMAGE"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

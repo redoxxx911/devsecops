@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Final DevSecOps Report</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2937;
+      line-height: 1.55;
+      margin: 42px;
+    }
+    h1, h2, h3 {
+      color: #0f172a;
+    }
+    h1 {
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 16px 0;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      vertical-align: top;
+    }
+    th {
+      background: #e2e8f0;
+    }
+    code {
+      background: #f1f5f9;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 6px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Final DevSecOps Report</h1>
+
+  <h2>1. Project Presentation</h2>
+  <p>This project presents a complete DevSecOps delivery chain for a Zero-Trust Vault application. The application is composed of a FastAPI backend, a React frontend, an ELK monitoring stack, and a SecOps automation bot connected to GitLab, Elasticsearch, Telegram, and an LLM provider.</p>
+  <p>The objective is to demonstrate how security can be integrated into each phase of software delivery: code validation, static analysis, container build, image scanning, dynamic application testing, deployment, monitoring, and automated incident assistance.</p>
+
+  <h2>2. DevSecOps Architecture</h2>
+  <table>
+    <tr><th>Layer</th><th>Component</th><th>Role</th></tr>
+    <tr><td>Application</td><td>FastAPI backend</td><td>Provides authentication and protected secret retrieval endpoints.</td></tr>
+    <tr><td>Application</td><td>React frontend</td><td>Provides the user interface for login and secure data access.</td></tr>
+    <tr><td>CI/CD</td><td>GitLab CI/CD</td><td>Orchestrates quality, security, build, scan, and deployment jobs.</td></tr>
+    <tr><td>SAST</td><td>SonarQube / SonarScanner</td><td>Detects code smells, bugs, vulnerabilities, and maintainability issues.</td></tr>
+    <tr><td>Container security</td><td>Trivy</td><td>Scans Docker images for high and critical vulnerabilities.</td></tr>
+    <tr><td>DAST</td><td>OWASP ZAP</td><td>Tests the running web application from an external attacker perspective.</td></tr>
+    <tr><td>Monitoring</td><td>Filebeat, Elasticsearch, Kibana</td><td>Collects, indexes, and visualizes runtime logs.</td></tr>
+    <tr><td>Automation</td><td>SecOps bot</td><td>Queries SIEM data and GitLab pipelines, then summarizes incidents.</td></tr>
+    <tr><td>Deployment</td><td>Docker Compose / Kubernetes</td><td>Runs the stack locally or in a cluster environment.</td></tr>
+  </table>
+
+  <h2>3. CI/CD Pipeline Explanation</h2>
+  <p>The global GitLab pipeline contains nine stages: install, lint, test, SAST, build, container scan, push, DAST, and deploy.</p>
+  <h3>3.1 Install</h3>
+  <p>The install stage prepares Python dependencies for the backend and validates that dependency files are usable inside CI.</p>
+  <h3>3.2 Lint</h3>
+  <p>The lint stage checks backend code with <code>flake8</code> and frontend code with <code>npm run lint</code>.</p>
+  <h3>3.3 Test</h3>
+  <p>The test stage runs backend tests with <code>pytest</code> and exports Cobertura coverage.</p>
+  <h3>3.4 SAST</h3>
+  <p>The SAST stage runs SonarScanner against backend, frontend, and SecOps bot source code.</p>
+  <h3>3.5 Build</h3>
+  <p>The build stage creates Docker images for the backend, frontend, and SecOps bot.</p>
+  <h3>3.6 Container Scan</h3>
+  <p>The container scan stage uses Trivy to inspect the generated Docker image artifacts for high and critical vulnerabilities.</p>
+  <h3>3.7 Push</h3>
+  <p>The push stage uploads images to GitLab Container Registry when the pipeline runs on the main branch.</p>
+  <h3>3.8 DAST</h3>
+  <p>The DAST stage runs OWASP ZAP baseline scanning against the deployed frontend.</p>
+  <h3>3.9 Deploy</h3>
+  <p>The deploy stage documents Docker Compose and Kubernetes deployment options.</p>
+
+  <h2>4. Tools Used</h2>
+  <table>
+    <tr><th>Tool</th><th>Category</th><th>Usage</th></tr>
+    <tr><td>GitLab CI/CD</td><td>CI/CD orchestration</td><td>Executes all pipeline stages.</td></tr>
+    <tr><td>Docker</td><td>Containerization</td><td>Packages backend, frontend, and bot services.</td></tr>
+    <tr><td>Docker Compose</td><td>Local deployment</td><td>Runs the full stack on one host.</td></tr>
+    <tr><td>Kubernetes</td><td>Cluster deployment</td><td>Defines deployments and services for the stack.</td></tr>
+    <tr><td>Flake8</td><td>Linting</td><td>Checks Python formatting and style issues.</td></tr>
+    <tr><td>Pytest</td><td>Testing</td><td>Runs backend tests and exports coverage.</td></tr>
+    <tr><td>SonarScanner</td><td>SAST</td><td>Performs static application security testing.</td></tr>
+    <tr><td>Trivy</td><td>Container scanning</td><td>Finds vulnerabilities in container images.</td></tr>
+    <tr><td>OWASP ZAP</td><td>DAST</td><td>Performs dynamic web application security testing.</td></tr>
+    <tr><td>Filebeat / Elasticsearch / Kibana</td><td>Monitoring</td><td>Collects, indexes, and visualizes runtime logs.</td></tr>
+    <tr><td>Telegram bot and LLM API</td><td>Automation</td><td>Summarizes SIEM and pipeline events.</td></tr>
+  </table>
+
+  <h2>5. Security Scan Result Analysis</h2>
+  <h3>5.1 SAST Findings</h3>
+  <p>The backend contains a hardcoded JWT secret, permissive CORS, and demo credentials. These are acceptable for a classroom demonstration but must be remediated before production deployment.</p>
+  <p>The frontend contains a hardcoded API URL. This should be injected through environment-specific configuration.</p>
+  <h3>5.2 Container Scan Findings</h3>
+  <p>Trivy is configured to report high and critical vulnerabilities. The remediation process is to update base images, update dependencies, rebuild, rescan, and document accepted risks.</p>
+  <h3>5.3 DAST Findings</h3>
+  <p>OWASP ZAP checks the running frontend for missing headers, passive scan alerts, exposed endpoints, and weak browser security configuration.</p>
+  <h3>5.4 Monitoring Findings</h3>
+  <p>Filebeat sends container logs to Elasticsearch. The SecOps bot watches for repeated <code>401</code> and error events and can summarize incidents through Telegram.</p>
+
+  <h2>6. Screenshots</h2>
+  <table>
+    <tr><th>Screenshot</th><th>Evidence</th></tr>
+    <tr><td>01-gitlab-pipeline-overview.png</td><td>Complete GitLab CI/CD pipeline graph.</td></tr>
+    <tr><td>02-sonarqube-dashboard.png</td><td>SAST dashboard and quality gate.</td></tr>
+    <tr><td>03-trivy-scan-results.png</td><td>Container vulnerability scan output.</td></tr>
+    <tr><td>04-zap-dast-report.png</td><td>OWASP ZAP HTML report.</td></tr>
+    <tr><td>05-kibana-dashboard.png</td><td>Runtime logs indexed in Kibana.</td></tr>
+    <tr><td>06-docker-compose-services.png</td><td>Local stack running with Docker Compose.</td></tr>
+    <tr><td>07-kubernetes-workloads.png</td><td>Kubernetes pods/services in running state.</td></tr>
+    <tr><td>08-secops-bot-alert.png</td><td>Telegram bot alert or command response.</td></tr>
+  </table>
+
+  <h2>7. Deployment</h2>
+  <h3>7.1 Docker Compose</h3>
+  <pre>docker compose up -d</pre>
+  <h3>7.2 Kubernetes</h3>
+  <pre>kubectl apply -k kubernetes/</pre>
+  <p>Sensitive values for the SecOps bot are represented as Kubernetes secrets and must be replaced before deployment.</p>
+
+  <h2>8. Conclusion</h2>
+  <p>This project demonstrates a complete DevSecOps workflow across the full software delivery lifecycle. The CI/CD pipeline validates the code, performs static analysis, builds Docker images, scans containers, runs dynamic security testing, and prepares deployment. The monitoring stack and SecOps bot extend the project beyond deployment by adding runtime visibility and automated incident assistance.</p>
+  <p>The main improvement areas are secret management, stricter CORS configuration, stronger authentication, environment-based frontend configuration, and enforcing pipeline gates once the project moves from demonstration mode to production mode.</p>
+</body>
+</html>

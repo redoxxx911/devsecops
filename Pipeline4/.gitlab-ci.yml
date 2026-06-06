@@ -1,0 +1,20 @@
+variables:
+  ZAP_TARGET_URL: "http://frontend"
+
+stages:
+  - dast
+
+zap_baseline_scan:
+  stage: dast
+  image:
+    name: ghcr.io/zaproxy/zaproxy:stable
+    entrypoint: [""]
+  script:
+    - mkdir -p /zap/wrk
+    - zap-baseline.py -t "$ZAP_TARGET_URL" -g gen.conf -I -r dast_report.html
+    - cp /zap/wrk/dast_report.html ./dast_report.html
+  artifacts:
+    paths:
+      - dast_report.html
+    when: always
+  allow_failure: true
