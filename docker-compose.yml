@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     restart: always
-# Add this under the 'services:' block in your existing docker-compose.yml
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: elasticsearch
@@ -44,6 +44,7 @@ services:
       - elasticsearch
       - kibana
     restart: always
+
   frontend:
     image: vault-frontend
     container_name: vault-frontend
@@ -52,3 +53,15 @@ services:
     depends_on:
       - backend
     restart: always
+
+  secops-bot:
+    build: 
+      context: ./secops-bot
+      dockerfile: Dockerfile
+    container_name: secops-bot
+    restart: always
+    env_file:
+    - ./secops-bot/.env
+    depends_on:
+      - backend
+      - elasticsearch

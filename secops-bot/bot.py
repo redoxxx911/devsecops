@@ -26,15 +26,17 @@ gl = gitlab.Gitlab(os.getenv("GITLAB_URL"), private_token=os.getenv("GITLAB_TOKE
 ALERT_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # The AI Model Fallback Chain
+# The AI Model Fallback Chain
 MODELS = [
-    "qwen/qwen3.6-plus-preview:free",
-    "qwen/qwen3.6-plus:free",
-    "qwen/qwen3-235b-a22b:free",
-    "qwen/qwen3-coder:free",
-    "qwen/qwen-2.5-7b-instruct:free" # Ultimate stable fallback
+    "meta-llama/llama-3.3-70b-instruct:free",      # Best free general, GPT-4 level
+    "nvidia/nemotron-3-super-120b-a12b:free",       # 262K context hybrid MoE (fixed ID)
+    "openai/gpt-oss-120b:free",                     # OpenAI open-weight, 131K context
+    "google/gemma-3-27b-it:free",                   # Solid Google model, 131K context
+    "nousresearch/hermes-3-llama-3.1-405b:free",    # 405B fallback
+    "openrouter/free",                              # Last resort: auto-picks any free model
 ]
 
-async def ask_llm(prompt: str, system_msg: str = "You are a senior DevSecOps AI assistant.") -> str:
+async def ask_llm(prompt: str, system_msg: str = "You are a DevSecOps AI assistant to a Senior DevSecOps Engineer.") -> str:
     """Wrapper for OpenRouter requests with a fallback mechanism"""
     last_error = ""
     for model in MODELS:
@@ -53,7 +55,7 @@ async def ask_llm(prompt: str, system_msg: str = "You are a senior DevSecOps AI 
             logging.warning(f"Model {model} failed: {last_error}. Trying next...")
             continue
             
-    return f"🚨 LLM Error: All fallback models failed. Last error: {last_error}"
+    return f"LLM Error: All fallback models failed. Last error: {last_error}"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ALERT_CHAT_ID
@@ -110,13 +112,17 @@ async def check_pipelines(update: Update, context: ContextTypes.DEFAULT_TYPE):
         failed_job_summary = next((j for j in jobs if j.status == 'failed'), None)
         
         if failed_job_summary:
-            # THE FIX: Fetch the full job object by ID to unlock the .trace() method
             full_job = project.jobs.get(failed_job_summary.id)
-            trace = full_job.trace().decode('utf-8')[-2000:]
+            trace = full_job.trace().decode('utf-8')[-1000:]
             
             prompt = f"This GitLab CI/CD job failed. Analyze the trace and tell me the exact commands to fix it:\n\n{trace}"
             analysis = await ask_llm(prompt)
-            await update.message.reply_text(f"❌ **Pipeline Failed (Job {full_job.id}):**\n\n{analysis}", parse_mode='Markdown')
+            msg = f"❌ **Pipeline Failed (Job {full_job.id}):**\n\n{analysis}"
+
+            chunk_size = 4000
+            for i in range(0, len(msg), chunk_size):
+                await update.message.reply_text(msg[i:i+chunk_size], parse_mode='Markdown')
+
     except Exception as e:
         await update.message.reply_text(f"❌ GitLab Query Failed: {str(e)}")
 
@@ -130,7 +136,7 @@ async def monitor_background(context: ContextTypes.DEFAULT_TYPE):
             "query": {
                 "bool": {
                     "must": [{"match": {"message": "401"}}],
-                    "filter": [{"range": {"@timestamp": {"gte": "now-1m"}}}] 
+                    "filter": [{"range": {"@timestamp": {"gte": "now-2m"}}}]
                 }
             },
             "size": 5, # Grab the logs to show the AI
@@ -140,7 +146,7 @@ async def monitor_background(context: ContextTypes.DEFAULT_TYPE):
         hits = res['hits']['hits']
         
         # If we see more than 3 failed attempts in 60 seconds, trigger the AI!
-        if res['hits']['total']['value'] > 3:
+        if res['hits']['total']['value'] > 1:
             # 1. Grab the raw logs
             logs = json.dumps([h['_source']['message'] for h in hits], indent=2)
             
@@ -164,7 +170,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("pipelines", check_pipelines))
     
     job_queue = app.job_queue
-    job_queue.run_repeating(monitor_background, interval=60, first=10)
+    job_queue.run_repeating(monitor_background, interval=10, first=5)
     
     print("🤖 SecOps AI Agent is booting...")
     app.run_polling()
